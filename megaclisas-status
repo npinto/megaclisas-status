@@ -70,22 +70,21 @@ def returnArrayNumber(output):
 
 
 def returnArrayInfo(output, controllerid, arrayid):
-    id = 'c%du%d' % (controllerid, arrayid)
+    _id = 'c%du%d' % (controllerid, arrayid)
     operationlinennumber = False
     linenumber = 0
+    ldpdcount = 0
+    spandepth = 0
 
     for line in output:
         line = line.strip()
         if re.match(r'Number Of Drives\s*((per span))?:.*[0-9]+$', line):
             ldpdcount = line.split(':')[1].strip()
-        else:
-            print "ERROR - Can't fetch the number of drives"
-            sys.exit(2)
         if re.match(r'Span Depth *:.*[0-9]+$', line):
             spandepth = line.split(':')[1].strip()
         if re.match(r'^RAID Level\s*:.*$', line):
             raidlevel = line.split(':')[1].split(',')[0].split('-')[1].strip()
-            type = 'RAID' + raidlevel
+            raid_type = 'RAID' + raidlevel
         if re.match(r'^Size\s*:.*$', line):
             # Size reported in MB
             if re.match(r'^.*MB$', line.split(':')[1]):
@@ -112,9 +111,9 @@ def returnArrayInfo(output, controllerid, arrayid):
         if ldpdcount and (int(spandepth) > 1):
             ldpdcount = int(ldpdcount) * int(spandepth)
             if int(raidlevel) < 10:
-                type = type + "0"
+                raid_type = raid_type + "0"
 
-    return [id, type, size, state, inprogress]
+    return [_id, raid_type, size, state, inprogress]
 
 
 def returnDiskInfo(output, controllerid):
@@ -157,7 +156,7 @@ if not nagiosmode:
         cmd = '%s -AdpAllInfo -a%d -NoLog' % (binarypath, controllerid)
         output = getOutput(cmd)
         controllermodel = returnControllerModel(output)
-        print 'c%d | ' % (controllerid, controllermodel)
+        print 'c%d | %s' % (controllerid, controllermodel)
         controllerid += 1
     print ''
 
@@ -195,7 +194,7 @@ if not nagiosmode:
 controllerid = 0
 while controllerid < controllernumber:
     arrayid = 0
-    cmd = ' -LDInfo -lall -a%d -NoLog' % (binarypath, controllerid)
+    cmd = '%s -LDInfo -lall -a%d -NoLog' % (binarypath, controllerid)
     output = getOutput(cmd)
     cmd = '%s -LdPdInfo -a%d -NoLog' % (binarypath, controllerid)
     output = getOutput(cmd)
@@ -207,7 +206,7 @@ while controllerid < controllernumber:
         else:
             nagiosgooddisk += 1
         if not nagiosmode:
-            print 'c%du%dp%d | %d | %d' % (controllerid, array[0],
+            print 'c%du%sp%s | %s | %s' % (controllerid, array[0],
                     array[1], array[3], array[2])
     controllerid += 1
 
