@@ -108,10 +108,10 @@ def returnArrayInfo(output, controllerid, arrayid):
         else:
             inprogress = 'None'
 
-        if ldpdcount and (int(spandepth) > 1):
-            ldpdcount = int(ldpdcount) * int(spandepth)
-            if int(raidlevel) < 10:
-                raid_type = raid_type + "0"
+    if ldpdcount and (int(spandepth) > 1):
+        ldpdcount = int(ldpdcount) * int(spandepth)
+        if int(raidlevel) < 10:
+            raid_type = raid_type + "0"
 
     return [_id, raid_type, size, state, inprogress]
 
