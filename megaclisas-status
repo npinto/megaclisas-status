@@ -169,7 +169,7 @@ if not nagiosmode:
         output = getOutput(cmd)
         controllermodel = returnControllerModel(output)
 		firmwareversion = returnControllerFirmware(output)
-        print 'c%d | %s | %sgit co' % (controllerid, controllermodel, firmwareversion)
+        print 'c%d | %s | %s' % (controllerid, controllermodel, firmwareversion)
         controllerid += 1
     print ''
 
