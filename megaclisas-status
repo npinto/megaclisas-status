@@ -6,6 +6,13 @@ import sys
 
 binarypath = "/usr/sbin/megacli"
 
+# Adding a quick check to see if we're root, because on most cards I've tried this on
+# We need root access to query
+if __name__ == '__main__':
+    if os.getenv('USER') != 'root':
+        print 'You can only run this script as root or with sudo, sucks I know. Blame the RAID card'
+        sys.exit(5)
+
 if len(sys.argv) > 2:
     print 'Usage: megaclisas-status [--nagios]'
     sys.exit(1)
@@ -58,6 +65,11 @@ def returnControllerNumber(output):
 def returnControllerModel(output):
     for line in output:
         if re.match(r'^Product Name.*$', line.strip()):
+            return line.split(':')[1].strip()
+			
+def returnControllerFirmware(output):
+    for line in output:
+        if re.match(r'^FW Package Build.*$', line.strip()):
             return line.split(':')[1].strip()
 
 
@@ -150,13 +162,14 @@ bad = False
 # List available controller
 if not nagiosmode:
     print '-- Controller informations --'
-    print '-- ID | Model'
+    print '-- ID | Model | Firmware'
     controllerid = 0
     while controllerid < controllernumber:
         cmd = '%s -AdpAllInfo -a%d -NoLog' % (binarypath, controllerid)
         output = getOutput(cmd)
         controllermodel = returnControllerModel(output)
-        print 'c%d | %s' % (controllerid, controllermodel)
+		firmwareversion = returnControllerFirmware(output)
+        print 'c%d | %s | %s' % (controllerid, controllermodel, firmwareversion)
         controllerid += 1
     print ''
 
