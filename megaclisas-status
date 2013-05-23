@@ -4,7 +4,7 @@ import os
 import re
 import sys
 
-binarypath = "/usr/sbin/megacli"
+binarypath = "/usr/bin/megacli"
 
 # Adding a quick check to see if we're root, because on most cards I've tried this on
 # We need root access to query
@@ -80,6 +80,13 @@ def returnArrayNumber(output):
             i = line.split(':')[1].strip()
     return i
 
+def returnNextArrayNumber(output,curNumber):
+    #Virtual Drive: 2 (Target Id: 2)
+    for line in output:
+	vdisk = re.match(r'^Virtual Drive: \d+ \(Target Id: (\d+)\)$', line.strip())
+        if vdisk and int(vdisk.group(1)) > curNumber:
+	    return int(vdisk.group(1))
+    return -1
 
 def returnArrayInfo(output, controllerid, arrayid):
     _id = 'c%du%d' % (controllerid, arrayid)
@@ -168,7 +175,7 @@ if not nagiosmode:
         cmd = '%s -AdpAllInfo -a%d -NoLog' % (binarypath, controllerid)
         output = getOutput(cmd)
         controllermodel = returnControllerModel(output)
-		firmwareversion = returnControllerFirmware(output)
+	firmwareversion = returnControllerFirmware(output)
         print 'c%d | %s | %s' % (controllerid, controllermodel, firmwareversion)
         controllerid += 1
     print ''
@@ -179,11 +186,13 @@ if not nagiosmode:
     print '-- ID | Type | Size | Status | InProgress'
 
 while controllerid < controllernumber:
-    arrayid = 0
+    cmd = '%s -LdInfo -Lall -a%d -NoLog' % (binarypath, controllerid)
+    arrayoutput = getOutput(cmd)
+    arrayid = returnNextArrayNumber(arrayoutput,-1)
     cmd = '%s -LdGetNum -a%d -NoLog' % (binarypath, controllerid)
     output = getOutput(cmd)
-    arraynumber = returnArrayNumber(output)
-    while arrayid < int(arraynumber):
+    arraynumber = int(returnArrayNumber(output))
+    while arraynumber > 0:
         cmd = '%s -LDInfo -l%d -a%d -NoLog' % (binarypath,
                                                 arrayid, controllerid)
         output = getOutput(cmd)
@@ -195,7 +204,9 @@ while controllerid < controllernumber:
             nagiosbadarray += 1
         else:
             nagiosgoodarray += 1
-        arrayid += 1
+        #arrayid += 1
+	arrayid = returnNextArrayNumber(arrayoutput,arrayid)
+	arraynumber -= 1
     controllerid += 1
 if not nagiosmode:
     print ''
